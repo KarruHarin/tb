@@ -1,7 +1,7 @@
 
 
 import { Router,Request,Response } from "express";
-import categoryModel from "../models/category";
+import categoryModel from "../models/categories";
 
 const categoriesRouter = Router()
 

@@ -15,6 +15,8 @@ import authRouter from "./authusers";
 import FAQRouter from "./faq";
 import productsRouter from "./products";
 import userRouter from "./users";
+import sizeRouter from "./size";
+import imageUploadRouter from "./images";
 
 
 const Routers = Router()
@@ -36,6 +38,11 @@ Routers.use('/auth',authRouter)
 Routers.use('/faq', FAQRouter)
 Routers.use('/product', productsRouter)
 Routers.use('/users', userRouter)
+Routers.use('/size', sizeRouter)
+Routers.use('/images', imageUploadRouter)
+
+
+
 
 
 

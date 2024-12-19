@@ -23,7 +23,6 @@ brandRouter.post("/create-brand", async (req: Request, res: Response) => {
     }
 });
 
-// Get all brands (excluding deleted ones)
 brandRouter.get("/brands", async (req: Request, res: Response) => {
     try {
         const brands = await brandModel.find({ is_deleted: false });
@@ -34,7 +33,6 @@ brandRouter.get("/brands", async (req: Request, res: Response) => {
     }
 });
 
-// Get a specific brand by name
 brandRouter.get("/brand/:name", async (req: Request, res: Response) => {
     try {
         const { name } = req.params;

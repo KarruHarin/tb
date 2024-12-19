@@ -1,52 +1,54 @@
 import { Router, Request, Response } from "express";
-import crypto from "crypto";
-import aws from "aws-sdk";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { randomBytes } from "crypto";
 import { promisify } from "util";
 import dotenv from "dotenv";
-import ImageModel from "../models/images";
-
-const randomBytes = promisify(crypto.randomBytes);
 
 dotenv.config();
 
-const bucketName: string = process.env.BUCKET_NAME!;
-const bucketRegion: string = process.env.BUCKET_REGION!;
-const accessKey: string = process.env.ACCESS_KEY!;
-const secretAccessKey: string = process.env.SECRET_ACCESS_KEY!;
+const router = Router();
+const randomBytesAsync = promisify(randomBytes);
 
-const imageUpload = Router();
-
-const preS3 = new aws.S3({
-    region: bucketRegion,
-    accessKeyId: accessKey,
-    secretAccessKey: secretAccessKey,
-    signatureVersion: "v4",
+const bucketName = process.env.BUCKET_NAME!;
+const bucketRegion = process.env.BUCKET_REGION!;
+const s3 = new S3Client({
+  region: bucketRegion,
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY!,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY!,
+  },
 });
 
-imageUpload.post("/bulk", async (req: Request, res: Response) => {
-    try {
-        const response = await ImageModel.insertMany(req.body);
-        res.status(201).send({ message: "Success", data: response });
-    } catch (err: any) {
-        res.status(500).send({ message: err.message });
+router.post("/get-presigned-urls", async (req: Request, res: Response) => {
+  try {
+    const { files } = req.body;
+
+    if (!files || !Array.isArray(files)) {
+      return res.status(400).send({ message: "Invalid request, files are required." });
     }
+
+    const presignedUrls = await Promise.all(
+      files.map(async (file: { filename: string; filetype: string }) => {
+        const randomString = (await randomBytesAsync(16)).toString("hex");
+        const fileKey = `products/${randomString}-${file.filename}`;
+
+        const command = new PutObjectCommand({
+          Bucket: bucketName,
+          Key: fileKey,
+          ContentType: file.filetype,
+        });
+
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        return { url, fileUrl: `https://${bucketName}.s3.${bucketRegion}.amazonaws.com/${fileKey}` };
+      })
+    );
+
+    res.status(200).send({ presignedUrls });
+  } catch (error) {
+    console.error("Error generating presigned URLs:", error);
+    res.status(500).send({ message: "Could not generate presigned URLs" });
+  }
 });
 
-imageUpload.get("/get-url", async (req: Request, res: Response) => {
-    try {
-        const rawBytes = await randomBytes(16);
-        const imageName = rawBytes.toString("hex"); 
-        const params = {
-            Bucket: bucketName,
-            Key: `images/${imageName}`, 
-            Expires: 60, 
-        };
-
-        const uploadURL = await preS3.getSignedUrlPromise("putObject", params);
-        return res.status(200).send(uploadURL);
-    } catch (err: any) {
-        res.status(500).send({ message: err.message });
-    }
-});
-
-export default imageUpload;
+export default router;

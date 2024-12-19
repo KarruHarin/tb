@@ -1,14 +1,13 @@
 import express, { Request, Response } from "express";
 import productsModel from "../models/products";
+import mongoose from "mongoose";
 
 const productsRouter = express.Router();
-
-
 
 // Get all products (excluding deleted ones)
 productsRouter.get("/products", async (req: Request, res: Response) => {
     try {
-        const products = await productsModel.find({ is_deleted: false });
+        const products = await productsModel.find({ is_deleted: false }).populate('category_id');
         res.status(200).send(products);
     } catch (err: any) {
         console.error(err.message);
@@ -16,53 +15,67 @@ productsRouter.get("/products", async (req: Request, res: Response) => {
     }
 });
 
-productsRouter.get('/products/pagination', async (req:Request,res:Response) => {
+// Fetch products with pagination and search functionality
+productsRouter.get('/products/pagination', async (req: Request, res: Response) => {
     try {
-        const query:any = req?.query
+        const query: any = req?.query;
         const page = parseInt(query?.page) || 1;
         const limit = parseInt(query?.limit) || 10;
+        const search = query?.search || "";
 
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
 
-        const filter = {is_deleted:false}
-        const response = await productsModel.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex)
+        const filter = {
+            is_deleted: false,
+            name: { $regex: search, $options: "i" }
+        };
 
-        const count = await productsModel.countDocuments(filter).exec()
+        const response = await productsModel.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex).populate('category_id');
+        const count = await productsModel.countDocuments(filter).exec();
 
-        let noOfPages = Math.ceil( count /limit) 
+        let noOfPages = Math.ceil(count / limit);
 
-        res.send({data:response,page,limit,count,noOfPages})
-
-    }
-    catch (err:any) {
-        res.send({message:'an error occured'})
-    }
-})
-
-
-productsRouter.get("/product/:product_id", async (req: Request, res: Response) => {
-    try {
-        const { product_id } = req.params;
-        const product = await productsModel.findOne({ product_id, is_deleted: false });
-
-        if (!product) {
-            return res.status(404).send({ message: "Product not found" });
-        }
-
-        res.status(200).send(product);
+        res.send({ data: response, page, limit, count, noOfPages });
     } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while retrieving the product" });
+        res.send({ message: 'An error occurred' });
     }
 });
 
+// Get product by category
+productsRouter.get("/products/:categoryId", async (req: Request, res: Response) => {
+    const { categoryId } = req.params;
+    try {
+        // Validate categoryId
+        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return res.status(400).send({ message: "Invalid Category ID" });
+        }
+
+        // Find products by category_id
+        const products = await productsModel
+            .find({
+                is_deleted: false,
+                category_id: new mongoose.Types.ObjectId(categoryId),
+            })
+            .populate("category_id");
+
+        if (products.length === 0) {
+            return res.status(404).send({ message: "No products found for this category" });
+        }
+
+        res.status(200).send(products);
+    } catch (err: any) {
+        console.error(err.message);
+        res.status(500).send({ message: "An error occurred while retrieving products" });
+    }
+});
+
+// Delete product
 productsRouter.delete("/product/:product_id", async (req: Request, res: Response) => {
     try {
         const { product_id } = req.params;
-
         const deletedProduct = await productsModel.findOneAndUpdate(
-            { product_id },
+            { _id: product_id },
             { is_deleted: true },
             { new: true }
         );
@@ -78,18 +91,19 @@ productsRouter.delete("/product/:product_id", async (req: Request, res: Response
     }
 });
 
+// Edit product details
 productsRouter.put("/product/:product_id", async (req: Request, res: Response) => {
     try {
         const { product_id } = req.params;
-        const { name, description, price, category_id, brand_id, stock, rating, images } = req.body;
+        const { name, description, price, category_id, stock, size, images } = req.body;
 
-        if (!name || !price || !category_id || !brand_id || !stock) {
+        if (!name || !price || !category_id || !stock || !size) {
             return res.status(400).send({ message: "Required fields are missing" });
         }
 
         const updatedProduct = await productsModel.findOneAndUpdate(
-            { product_id, is_deleted: false },
-            { name, description, price, category_id, brand_id, stock, rating, images },
+            { _id: product_id, is_deleted: false },
+            { name, description, price, category_id, stock, size, images },
             { new: true }
         );
 
@@ -104,13 +118,14 @@ productsRouter.put("/product/:product_id", async (req: Request, res: Response) =
     }
 });
 
+// Update product availability
 productsRouter.put("/product/:product_id/availability", async (req: Request, res: Response) => {
     try {
         const { product_id } = req.params;
         const { is_in_stock, is_sold_out } = req.body;
 
         const updatedProduct = await productsModel.findOneAndUpdate(
-            { product_id, is_deleted: false },
+            { _id: product_id, is_deleted: false },
             { is_in_stock, is_sold_out },
             { new: true }
         );

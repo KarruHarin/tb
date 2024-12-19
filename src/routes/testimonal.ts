@@ -3,12 +3,13 @@ import testimonialModel from '../models/testimonal';
 
 const testimonalRouter = express.Router();
 
+// Create a new testimonial
 testimonalRouter.post('/create-testimonial', async (req: Request, res: Response) => {
     try {
-        const { user_id, content, rating } = req.body;
+        const { user_name, content, rating } = req.body;
 
         // Validate required fields
-        if (!user_id || !content || content.length === 0) {
+        if (!user_name || !content || content.trim().length === 0) {
             return res.status(400).send({ message: 'All fields (user_id, content, rating) are required' });
         }
         if (rating < 1 || rating > 5) {
@@ -16,28 +17,38 @@ testimonalRouter.post('/create-testimonial', async (req: Request, res: Response)
         }
 
         // Create new testimonial
-        const testimonial = new testimonialModel({ user_id, content, rating });
+        const testimonial = new testimonialModel({
+            // user_id,
+            user_name,
+            content,
+            rating,
+            is_approved: false,
+            is_deleted: false,
+        });
         const response = await testimonial.save();
 
-        res.status(201).send(response);
+        res.status(201).send({ message: 'Testimonial created successfully', testimonial: response });
     } catch (err: any) {
         console.error(err.message);
-        res.status(500).send({ message: 'An error occurred' });
+        res.status(500).send({ message: 'An error occurred while creating the testimonial' });
     }
 });
 
-testimonalRouter.get('/', async (req:Request,res:Response) => {
+// Fetch all testimonials
+testimonalRouter.get('/', async (req: Request, res: Response) => {
     try {
+        const testimonials = await testimonialModel
+            .find({ is_deleted: false })
+            .populate('user_id', 'firstName lastName');
 
-        const response = await testimonialModel.find()
-
-        res.send(response)
+        res.status(200).send(testimonials);
+    } catch (err: any) {
+        console.error(err.message);
+        res.status(500).send({ message: 'An error occurred while fetching testimonials' });
     }
-    catch (err:any) {
-        res.send({message:'an error occured'})
-    }
-})
+});
 
+// Paginated testimonials
 testimonalRouter.get('/pagination', async (req:Request,res:Response) => {
     try {
         const query:any = req?.query

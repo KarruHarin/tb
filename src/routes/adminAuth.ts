@@ -1,61 +1,42 @@
-import { Router,Request,Response } from "express";
-import dotenv from 'dotenv'
-dotenv.config()
+import { Router, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import adminModel from "../models/admin";
+import dotenv from "dotenv";
+import usersModel from "../models/users";
 
-const secret:any = process.env.secret
+dotenv.config();
+const secret: string = process.env.JWT_SECRET || "defaultJwtSecret";
+const authRouter = Router();
 
-console.log(secret);
+// Admin Login
+authRouter.post("/admin/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
 
-const AuthRouter = Router();
+    // Find admin user
+    const admin = await usersModel.findOne({ email, role: 1, is_deleted: false });
+    if (!admin) return res.status(404).send({ message: "Admin not found" });
 
-AuthRouter.post('/login', async (req:Request,res:Response) => {
+    // Validate password
+    const isValidPassword = await bcrypt.compare(password, admin.hashed_password);
+    if (!isValidPassword) return res.status(401).send({ message: "Invalid credentials" });
 
-    try {
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: admin._id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
+      },
+      secret,
+      { expiresIn: "24h" }
+    );
 
-        const findAdmin:any = await adminModel.findOne({email:req.body.email})
+    res.send({ message: "Admin login successful", token });
+  } catch (err: any) {
+    res.status(500).send({ message: "An error occurred during login", error: err.message });
+  }
+});
 
-        if (findAdmin) {
-            const valid = await bcrypt.compare(req.body.password, findAdmin.hashed_password);
-            
-            if (valid) {
-
-                let token = jwt.sign(
-                    {
-                        email:findAdmin?.email,type:'1',name:findAdmin?.name
-                    },
-                    'track',
-                    { expiresIn: "24h" }
-                );
-
-
-                res.send({message:'success','token':token,})
-            }
-            else {
-                res.send({message:'wrong Password'})
-            }
-        }
-        else {
-            res.send({message:'user not found'})
-        }
-
-    }
-    catch (err:any) {
-        res.send({message:err.message})
-    }
-})
-
-AuthRouter.get('/', async (req, res) => {
-    try {
-        const response = await adminModel.find()
-
-        res.send({message:response})
-    } catch (error) {
-        res.send({message : error})
-        
-    }
-})
-
-export default AuthRouter
+export default authRouter;

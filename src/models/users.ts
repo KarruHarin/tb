@@ -1,21 +1,15 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose from "mongoose";
 
-const usersSchema: Schema = new mongoose.Schema(
-    {
-        name: { type: String, index: true },
-        email: { type: String, unique: true, required: true },
-        hashed_password: { type: String, required: true },
-        phone: { type: String },
-        role: { type: Number}, // user_type can be '1' for admin or '2' for normal user
-        address: { type: String },
-        created_at: { type: Date, default: Date.now },
-        updated_at: { type: Date },
-        deleted_at: { type: Date },
-        is_deleted: { type: Boolean, default: false },
-    },
-    { timestamps: true }
+const userSchema = new mongoose.Schema(
+  {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    hashed_password: { type: String, required: true },
+    role: { type: Number, default: 0 }, // 0: User, 1: Admin
+    is_deleted: { type: Boolean, default: false },
+  },
+  { timestamps: true }
 );
 
-const usersModel = mongoose.model('users', usersSchema);
-
-export default usersModel;
+export default mongoose.model("User", userSchema);
