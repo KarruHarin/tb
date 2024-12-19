@@ -22,11 +22,12 @@ authRouter.post("/admin/login", async (req: Request, res: Response) => {
     if (!isValidPassword) return res.status(401).send({ message: "Invalid credentials" });
 
     // Generate JWT token
+    //name:admin.name
     const token = jwt.sign(
       {
         id: admin._id,
         email: admin.email,
-        name: admin.name,
+        name: "name",
         role: admin.role,
       },
       secret,

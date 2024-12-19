@@ -12,10 +12,6 @@ dotenv.config();
 const secret: string = process.env.secret || "defaultJwtSecret";
 const authRouter = Router();
 
-<<<<<<< HEAD
-// Express session setup
-=======
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
 authRouter.use(
   session({
     secret: process.env.SESSION_SECRET || "defaultSessionSecret",
@@ -27,7 +23,6 @@ authRouter.use(
 authRouter.use(passport.initialize());
 authRouter.use(passport.session());
 
-<<<<<<< HEAD
 // Serialize and deserialize user
 passport.serializeUser((user: any, done: any) => {
   done(null, user);
@@ -38,16 +33,6 @@ passport.deserializeUser((user: any, done: any) => {
 });
 
 // Google OAuth Strategy
-=======
-passport.serializeUser((user: any, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((user: any, done) => {
-  done(null, user);
-});
-
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
 passport.use(
   new GoogleStrategy(
     {
@@ -55,7 +40,6 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       callbackURL: "/auth/google/callback",
     },
-<<<<<<< HEAD
     async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any | false) => void) => {
       try {
         const email = profile.emails?.[0]?.value;
@@ -77,43 +61,12 @@ passport.use(
         return done(null, existingUser);
       } catch (err) {
         return done(err, null);
-=======
-    async (
-      accessToken: string,
-      refreshToken: string,
-      profile: any,
-      done: (error: any, user?: any | false) => void
-    ) => {
-      try {
-        const email = profile.emails?.[0]?.value;
-        if (!email) {
-          return done(null, false); // If no email is provided, return false
-        }
-
-        const existingUser = await usersModel.findOne({ email });
-        if (!existingUser) {
-          const newUser = new usersModel({
-            name: profile.displayName,
-            email: email,
-            role: 2, // Default role for Google users
-          });
-          const savedUser = await newUser.save();
-          return done(null, savedUser); // Pass the new user to `done`
-        }
-        return done(null, existingUser); // Pass the existing user to `done`
-      } catch (err) {
-        return done(err, null); // Pass the error to `done`
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
       }
     }
   )
 );
 
-<<<<<<< HEAD
 // Facebook OAuth Strategy
-=======
-// Facebook Strategy
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
 passport.use(
   new FacebookStrategy(
     {
@@ -122,7 +75,6 @@ passport.use(
       callbackURL: "/auth/facebook/callback",
       profileFields: ["id", "displayName", "email"],
     },
-<<<<<<< HEAD
     async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any | false) => void) => {
       try {
         const email = profile.emails?.[0]?.value;
@@ -130,26 +82,10 @@ passport.use(
 
         const existingUser = await usersModel.findOne({ email });
 
-=======
-    async (
-      accessToken: string,
-      refreshToken: string,
-      profile: any,
-      done: (error: any, user?: any | false) => void
-    ) => {
-      try {
-        const email = profile.emails?.[0]?.value;
-        if (!email) {
-          return done(null, false); // If no email is provided, return false
-        }
-
-        const existingUser = await usersModel.findOne({ email });
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
         if (!existingUser) {
           const newUser = new usersModel({
             name: profile.displayName,
             email: email,
-<<<<<<< HEAD
             role: 1, // Default role for standard users
           });
 
@@ -160,146 +96,19 @@ passport.use(
         return done(null, existingUser);
       } catch (err) {
         return done(err, null);
-=======
-            role: 2, // Default role for Facebook users
-          });
-          const savedUser = await newUser.save();
-          return done(null, savedUser); // Pass the new user to `done`
-        }
-        return done(null, existingUser); // Pass the existing user to `done`
-      } catch (err) {
-        return done(err, null); // Pass the error to `done`
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
       }
     }
   )
 );
 
 // Google Login Route
-<<<<<<< HEAD
 authRouter.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-=======
-authRouter.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
 
 authRouter.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   async (req: Request, res: Response) => {
     const user = req.user as any;
-<<<<<<< HEAD
-=======
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      secret,
-      { expiresIn: "24h" }
-    );
-
-    res.send({ message: "Google login successful", token });
-  }
-);
-
-// Facebook Login Route
-authRouter.get(
-  "/auth/facebook",
-  passport.authenticate("facebook", { scope: ["email"] })
-);
-
-authRouter.get(
-  "/auth/facebook/callback",
-  passport.authenticate("facebook", { failureRedirect: "/login" }),
-  async (req: Request, res: Response) => {
-    const user = req.user as any;
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      secret,
-      { expiresIn: "24h" }
-    );
-
-    res.send({ message: "Facebook login successful", token });
-  }
-);
-
-// Default Signup Route
-authRouter.post("/signup", async (req: Request, res: Response) => {
-  try {
-    const { name, email, password, phone, role, address } = req.body;
-
-    if (!name || !email || !password || !role) {
-      return res.status(400).send({ message: "All fields are required." });
-    }
-
-    const existingUser = await usersModel.findOne({ email });
-    if (existingUser) {
-      return res.status(400).send({ message: "Email is already registered." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new usersModel({
-      name,
-      email,
-      hashed_password: hashedPassword,
-      phone,
-      role,
-      address,
-    });
-
-    const savedUser = await newUser.save();
-
-    res.status(201).send({ message: "User created successfully", user: savedUser });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send({ message: "An error occurred during signup" });
-  }
-});
-
-// Default Login Route
-authRouter.post("/login", async (req: Request, res: Response) => {
-  try {
-    const findUser: any = await usersModel.findOne({ email: req.body.email });
-
-    if (!findUser) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const valid = await bcrypt.compare(req.body.password, findUser.hashed_password);
-    if (!valid) {
-      return res.status(401).send({ message: "Invalid password" });
-    }
-
-    const token = jwt.sign(
-      {
-        id: findUser?._id,
-        email: findUser?.email,
-        name: findUser.name,
-        role: findUser?.role,
-      },
-      secret,
-      { expiresIn: "24h" }
-    );
-
-    res.send({ message: "Login successful", token });
-  } catch (err: any) {
-    res.status(500).send({ message: err.message });
-  }
-});
->>>>>>> dd229e6ac3c52fa750ff9ab1ab822f6dcca17c0a
 
     const token = jwt.sign(
       {
