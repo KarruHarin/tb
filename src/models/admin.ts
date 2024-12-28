@@ -1,12 +1,23 @@
-import mongoose,{Schema,Document} from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const adminSchema:Schema = new mongoose.Schema({
-    name:{type:String},
-    email:{type:String},
-    phone:{type:String},
-    hashed_password:{type:String}
-},{timestamps:true});
+interface Admin extends Document {
+  name: string;
+  email: string;
+  phone: string;
+  hashed_password: string;
+  is_deleted: boolean;
+}
 
-const adminModel = mongoose.model('admin',adminSchema); 
+const adminSchema: Schema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    hashed_password: { type: String, required: true },
+    is_deleted: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+const adminModel = mongoose.model<Admin>("admin", adminSchema);
 
 export default adminModel;

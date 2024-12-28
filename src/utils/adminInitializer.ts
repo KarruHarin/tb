@@ -1,20 +1,17 @@
 import bcrypt from "bcrypt";
-import usersModel from "../models/users";
+import adminModel from "../models/admin";
 
 const initializeAdminAccount = async () => {
-  const adminEmail = "admin@gmail.com"; // Change to your preferred admin email
-  const adminPassword = "password"; // Change to a secure password
-
+  const adminEmail = "admin@gmail.com";
+  const adminPassword = "password";
   try {
-    const existingAdmin = await usersModel.findOne({ email: adminEmail, role: 1 });
+    const existingAdmin = await adminModel.findOne({ email: adminEmail });
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      await usersModel.create({
-        firstName: "Admin",
-        lastName:"Admin",
+      await adminModel.create({
+        name: "Admin",
         email: adminEmail,
         hashed_password: hashedPassword,
-        role: 1,
         is_deleted: false,
       });
       console.log("Admin account initialized successfully.");

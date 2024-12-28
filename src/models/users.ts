@@ -1,15 +1,24 @@
 import mongoose from "mongoose";
 
+interface User extends Document {
+  full_name: string;
+  email: string;
+  phone_number: string;
+  password: string;
+  is_deleted: boolean;
+}
+
 const userSchema = new mongoose.Schema(
   {
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    full_name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    hashed_password: { type: String, required: true },
-    role: { type: Number, default: 0 }, // 0: User, 1: Admin
+    password: { type: String, required: true },
+    phone_number: { type: String, required: true, unique: true },
     is_deleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("User", userSchema);
+const userModel = mongoose.model<User>("user", userSchema);
+
+export default userModel;

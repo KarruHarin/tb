@@ -27,29 +27,37 @@ FAQRouter.get("/", async (req: Request, res: Response) => {
 });
 
 
-FAQRouter.get('/pagination', async (req:Request,res:Response) => {
+FAQRouter.get('/pagination', async (req: Request, res: Response) => {
     try {
-        const query:any = req?.query
-        const page = parseInt(query?.page) || 1;
-        const limit = parseInt(query?.limit) || 10;
+        const query: any = req.query;
+        const page = Math.max(1, parseInt(query?.page) || 1);
+        const limit = Math.max(1, parseInt(query?.limit) || 10);
 
         const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
 
-        const filter = {is_published: true, is_deleted:false}
-        const response = await FAQModel.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex)
+        const filter = { is_published: true, $or: [{ is_deleted: false }, { is_deleted: { $exists: false } }] };
 
-        const count = await FAQModel.countDocuments(filter).exec()
+        const data = await FAQModel.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(startIndex)
+            .limit(limit);
 
-        let noOfPages = Math.ceil( count /limit) 
+        const count = await FAQModel.countDocuments(filter);
 
-        res.send({data:response,page,limit,count,noOfPages})
+        const noOfPages = Math.ceil(count / limit);
 
+        res.status(200).send({
+            data,
+            page,
+            limit,
+            count,
+            noOfPages,
+        });
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).send({ message: 'An error occurred while fetching FAQs with pagination.' });
     }
-    catch (err:any) {
-        res.send({message:'an error occured'})
-    }
-})
+});
 
 
 
