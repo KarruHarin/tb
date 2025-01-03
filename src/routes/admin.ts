@@ -39,6 +39,60 @@ const isValidImageUrl = (url: string): boolean =>
 // Middleware for validating MongoDB ObjectId
 const validateObjectId = (id: string): boolean => mongoose.Types.ObjectId.isValid(id);
 
+// adminRouter.post("/create-product", async (req: Request, res: Response) => {
+//   try {
+//     const { name, description, price, category_id, size, stock, images } = req.body;
+
+//     // Validate required fields
+//     if (!name || !price || !category_id || !size || !stock || !images || images.length === 0) {
+//       return res.status(400).send({ message: "All fields are required, including images." });
+//     }
+
+//     if (price <= 0 || stock < 0) {
+//       return res.status(400).send({ message: "Price and stock must be positive numbers." });
+//     }
+
+//     if (!validateObjectId(category_id)) {
+//       return res.status(400).send({ message: "Invalid category ID." });
+//     }
+
+//     // Validate category
+//     const category = await categoryModel.findById(category_id);
+//     if (!category) {
+//       return res.status(404).send({ message: "Category not found." });
+//     }
+
+//     // Validate and save images
+//     const imageDocs = await Promise.all(
+//       images.map(async (imageUrl: string) => {
+//         if (!isValidImageUrl(imageUrl)) {
+//           throw new Error(`Invalid image URL: ${imageUrl}`);
+//         }
+//         return new ImageModel({ image_url: imageUrl }).save();
+//       })
+//     );
+
+//     // Save product
+//     const newProduct = new productsModel({
+//       name,
+//       description,
+//       price,
+//       category_id,
+//       size,
+//       stock,
+//       images: imageDocs.map((img) => img.image_url),
+//     });
+
+//     const savedProduct = await newProduct.save();
+//     res.status(201).send({ message: "Product created successfully", product: savedProduct });
+//   } catch (err: any) {
+//     console.error("Error creating product:", err.message);
+//     res.status(500).send({ message: "An error occurred while creating the product." });
+//   }
+// });
+
+// Create Category
+
 adminRouter.post("/create-product", async (req: Request, res: Response) => {
   try {
     const { name, description, price, category_id, size, stock, images } = req.body;
@@ -80,18 +134,27 @@ adminRouter.post("/create-product", async (req: Request, res: Response) => {
       category_id,
       size,
       stock,
-      images: imageDocs.map((img) => img._id),
+      images: imageDocs.map((img) => img._id), // Save the IDs of the images
     });
 
     const savedProduct = await newProduct.save();
-    res.status(201).send({ message: "Product created successfully", product: savedProduct });
+
+    // Populate images with URLs in the response
+    const populatedProduct = await productsModel
+      .findById(savedProduct._id)
+      .populate("images", "image_url"); // Populate the `image_url` field
+
+    res.status(201).send({
+      message: "Product created successfully",
+      product: populatedProduct,
+    });
   } catch (err: any) {
     console.error("Error creating product:", err.message);
     res.status(500).send({ message: "An error occurred while creating the product." });
   }
 });
 
-// Create Category
+
 adminRouter.post("/create-category", async (req: Request, res: Response) => {
   try {
     const { name } = req.body;

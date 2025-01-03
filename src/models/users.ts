@@ -5,6 +5,7 @@ interface User extends Document {
   email: string;
   phone_number: string;
   password: string;
+  is_verified: boolean;
   is_deleted: boolean;
 }
 
@@ -14,6 +15,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     phone_number: { type: String, required: true, unique: true },
+    is_verified: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -7,7 +7,11 @@ const productsRouter = express.Router();
 // Get all products (excluding deleted ones)
 productsRouter.get("/products", async (req: Request, res: Response) => {
     try {
-        const products = await productsModel.find({ is_deleted: false }).populate('category_id');
+        const products = await productsModel.find({ is_deleted: false }).populate('category_id').populate({
+            path: 'images',
+            model: 'Image', 
+            select: 'image_url'
+        });;
         res.status(200).send(products);
     } catch (err: any) {
         console.error(err.message);
@@ -31,7 +35,11 @@ productsRouter.get('/products/pagination', async (req: Request, res: Response) =
             name: { $regex: search, $options: "i" }
         };
 
-        const response = await productsModel.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex).populate('category_id');
+        const response = await productsModel.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex).populate('category_id').populate({
+            path: 'images',
+            model: 'Image', // Reference the Image model
+            select: 'image_url' // Select only the image_url field
+        });;
         const count = await productsModel.countDocuments(filter).exec();
 
         let noOfPages = Math.ceil(count / limit);
