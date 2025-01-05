@@ -24,4 +24,4 @@ const port = process.env.port
 const httpServer = createServer(app);
 
 
-httpServer.listen(port,() => {console.log(`server is running at port ${port}`)})
+httpServer.listen(port,() => {console.log(`server is running on port ${port}`)})
