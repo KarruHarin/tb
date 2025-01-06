@@ -4,12 +4,12 @@ import cartModel from "../models/cart";
 const cartRouter = express.Router();
 
 // Add an item to the cart
-cartRouter.post("/add-to-cart", async (req: Request, res: Response) => {
+cartRouter.post("/cart", async (req: Request, res: Response) => {
     try {
-        const { customer_id, product_id, quantity, price } = req.body;
+        const { customer_id, product_id, variant, quantity, price } = req.body;
 
-        if (!customer_id || !product_id || !quantity || !price) {
-            return res.status(400).send({ message: "Missing required fields" });
+        if (!customer_id || !product_id || !variant?.size || !quantity || !price) {
+            return res.status(400).json({ message: "Missing required fields." });
         }
 
         const total_price = quantity * price;
@@ -17,16 +17,17 @@ cartRouter.post("/add-to-cart", async (req: Request, res: Response) => {
         const cartItem = new cartModel({
             customer_id,
             product_id,
+            variant,
             quantity,
             price,
-            total_price
+            total_price,
         });
 
-        const response = await cartItem.save();
-        res.status(201).send(response);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while adding to cart" });
+        const savedCartItem = await cartItem.save();
+        res.status(201).json(savedCartItem);
+    } catch (error: any) {
+        console.error("Error adding to cart:", error.message);
+        res.status(500).json({ message: "Failed to add to cart." });
     }
 });
 
@@ -34,42 +35,48 @@ cartRouter.post("/add-to-cart", async (req: Request, res: Response) => {
 cartRouter.get("/cart/:customerId", async (req: Request, res: Response) => {
     try {
         const { customerId } = req.params;
-        const cartItems = await cartModel.find({ customer_id: customerId, is_deleted: false });
-        res.status(200).send(cartItems);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while retrieving cart items" });
+
+        const cartItems = await cartModel
+            .find({ customer_id: customerId, is_deleted: false })
+            .populate("product_id", "name price variants");
+
+        res.status(200).json(cartItems);
+    } catch (error: any) {
+        console.error("Error retrieving cart items:", error.message);
+        res.status(500).json({ message: "Failed to retrieve cart items." });
     }
 });
 
-// Update a cart item by ID
+// Update a cart item
 cartRouter.put("/cart/:cartId", async (req: Request, res: Response) => {
     try {
-        const { quantity, price } = req.body;
         const { cartId } = req.params;
+        const { variant, quantity, price } = req.body;
 
-        if (!quantity || !price) {
-            return res.status(400).send({ message: "Quantity and price are required" });
+        if (!variant?.size || !quantity || !price) {
+            return res.status(400).json({ message: "Variant, quantity, and price are required." });
         }
 
         const total_price = quantity * price;
 
         const updatedCartItem = await cartModel.findByIdAndUpdate(
             cartId,
-            { quantity, price, total_price },
+            { variant, quantity, price, total_price },
             { new: true }
         );
 
-        if (!updatedCartItem) return res.status(404).send({ message: "Cart item not found" });
+        if (!updatedCartItem) {
+            return res.status(404).json({ message: "Cart item not found." });
+        }
 
-        res.status(200).send(updatedCartItem);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while updating the cart item" });
+        res.status(200).json(updatedCartItem);
+    } catch (error: any) {
+        console.error("Error updating cart item:", error.message);
+        res.status(500).json({ message: "Failed to update cart item." });
     }
 });
 
-// Soft-delete a cart item by ID
+// Soft-delete a cart item
 cartRouter.delete("/cart/:cartId", async (req: Request, res: Response) => {
     try {
         const { cartId } = req.params;
@@ -80,12 +87,14 @@ cartRouter.delete("/cart/:cartId", async (req: Request, res: Response) => {
             { new: true }
         );
 
-        if (!deletedCartItem) return res.status(404).send({ message: "Cart item not found" });
+        if (!deletedCartItem) {
+            return res.status(404).json({ message: "Cart item not found." });
+        }
 
-        res.status(200).send({ message: "Cart item removed successfully" });
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while deleting the cart item" });
+        res.status(200).json({ message: "Cart item deleted successfully." });
+    } catch (error: any) {
+        console.error("Error deleting cart item:", error.message);
+        res.status(500).json({ message: "Failed to delete cart item." });
     }
 });
 

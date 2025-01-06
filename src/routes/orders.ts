@@ -3,17 +3,36 @@ import orderModel from "../models/orders";
 
 const orderRouter = express.Router();
 
-// Create a new order
-orderRouter.post("/create-order", async (req: Request, res: Response) => {
+let sequenceNumber = 0;
+orderRouter.post("/orders", async (req: Request, res: Response) => {
     try {
-        const { order_id, user_id, products, total_price, category_id, brand_id, stock, shipping_address, images } = req.body;
+        const {
+            user_id,
+            products,
+            total_price,
+            category_id,
+            brand_id,
+            shipping_address,
+            order_status,
+            payment_status,
+        } = req.body;
 
-        // Validate required fields
-        if (!order_id || !user_id || !products || !total_price || !category_id || !brand_id || !shipping_address) {
-            return res.status(400).send({ message: "Missing required fields" });
+        if (
+            !user_id ||
+            !products?.length ||
+            !total_price ||
+            !category_id ||
+            !brand_id ||
+            !shipping_address
+        ) {
+            return res.status(400).json({ message: "Missing required fields." });
         }
 
-        // Create a new order
+        sequenceNumber += 1;
+
+        const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const order_id = `TEC${datePart}-${String(sequenceNumber).padStart(6, "0")}`;
+
         const order = new orderModel({
             order_id,
             user_id,
@@ -21,82 +40,73 @@ orderRouter.post("/create-order", async (req: Request, res: Response) => {
             total_price,
             category_id,
             brand_id,
-            stock,
             shipping_address,
-            images,
+            order_status,
+            payment_status,
         });
 
-        const response = await order.save();
-        res.status(201).send(response);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while creating the order" });
+        const savedOrder = await order.save();
+        res.status(201).json(savedOrder);
+    } catch (error: any) {
+        console.error("Error creating order:", error.message);
+        res.status(500).json({ message: "Failed to create order." });
     }
 });
 
-// Retrieve all orders
-orderRouter.get("/orders", async (req: Request, res: Response) => {
+orderRouter.get("/orders/:userId", async (req: Request, res: Response) => {
     try {
-        const orders = await orderModel.find({ is_deleted: false }).populate("user_id").populate("category_id").populate("brand_id");
-        res.status(200).send(orders);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while retrieving orders" });
+        const { userId } = req.params;
+
+        const orders = await orderModel
+            .find({ user_id: userId, is_deleted: false })
+            .populate("products.product_id", "name price variants");
+
+        res.status(200).json(orders);
+    } catch (error: any) {
+        console.error("Error retrieving orders:", error.message);
+        res.status(500).json({ message: "Failed to retrieve orders." });
     }
 });
 
-// Retrieve an order by ID
-orderRouter.get("/order/:id", async (req: Request, res: Response) => {
+orderRouter.put("/orders/:orderId", async (req: Request, res: Response) => {
     try {
-        const order = await orderModel.findOne({ _id: req.params.id, is_deleted: false })
-            .populate("user_id")
-            .populate("category_id")
-            .populate("brand_id");
-        
-        if (!order) return res.status(404).send({ message: "Order not found" });
-
-        res.status(200).send(order);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while retrieving the order" });
-    }
-});
-
-// Update an order by ID
-orderRouter.put("/order/:id", async (req: Request, res: Response) => {
-    try {
-        const { products, total_price, stock, shipping_address, order_status, payment_status, delivery_date } = req.body;
+        const { orderId } = req.params;
+        const { order_status, payment_status } = req.body;
 
         const updatedOrder = await orderModel.findByIdAndUpdate(
-            req.params.id,
-            { products, total_price, stock, shipping_address, order_status, payment_status, delivery_date, updatedAt: new Date() },
+            orderId,
+            { order_status, payment_status },
             { new: true }
         );
 
-        if (!updatedOrder) return res.status(404).send({ message: "Order not found" });
+        if (!updatedOrder) {
+            return res.status(404).json({ message: "Order not found." });
+        }
 
-        res.status(200).send(updatedOrder);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while updating the order" });
+        res.status(200).json(updatedOrder);
+    } catch (error: any) {
+        console.error("Error updating order:", error.message);
+        res.status(500).json({ message: "Failed to update order." });
     }
 });
-
-// Soft-delete an order by ID
-orderRouter.delete("/order/:id", async (req: Request, res: Response) => {
+orderRouter.delete("/orders/:orderId", async (req: Request, res: Response) => {
     try {
+        const { orderId } = req.params;
+
         const deletedOrder = await orderModel.findByIdAndUpdate(
-            req.params.id,
+            orderId,
             { is_deleted: true, deleted_at: new Date() },
             { new: true }
         );
 
-        if (!deletedOrder) return res.status(404).send({ message: "Order not found" });
+        if (!deletedOrder) {
+            return res.status(404).json({ message: "Order not found." });
+        }
 
-        res.status(200).send({ message: "Order deleted successfully" });
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send({ message: "An error occurred while deleting the order" });
+        res.status(200).json({ message: "Order deleted successfully." });
+    } catch (error: any) {
+        console.error("Error deleting order:", error.message);
+        res.status(500).json({ message: "Failed to delete order." });
     }
 });
 

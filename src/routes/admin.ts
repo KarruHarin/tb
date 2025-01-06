@@ -3,20 +3,15 @@ import productsModel from "../models/products";
 import categoryModel from "../models/categories";
 import subcategoryModel from "../models/subcategory";
 import ImageModel from "../models/images";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { promisify } from "util";
-import crypto from "crypto";
+import { S3Client } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import multer from "multer";
 import mongoose from "mongoose";
 
-// Load environment variables
 dotenv.config();
 
 const adminRouter = Router();
-const upload = multer(); // Placeholder for file upload (if needed in the future)
-
-const randomBytes = promisify(crypto.randomBytes);
+const upload = multer();
 
 // AWS S3 Configuration
 const bucketName = process.env.BUCKET_NAME!;
@@ -39,60 +34,7 @@ const isValidImageUrl = (url: string): boolean =>
 // Middleware for validating MongoDB ObjectId
 const validateObjectId = (id: string): boolean => mongoose.Types.ObjectId.isValid(id);
 
-// adminRouter.post("/create-product", async (req: Request, res: Response) => {
-//   try {
-//     const { name, description, price, category_id, size, stock, images } = req.body;
-
-//     // Validate required fields
-//     if (!name || !price || !category_id || !size || !stock || !images || images.length === 0) {
-//       return res.status(400).send({ message: "All fields are required, including images." });
-//     }
-
-//     if (price <= 0 || stock < 0) {
-//       return res.status(400).send({ message: "Price and stock must be positive numbers." });
-//     }
-
-//     if (!validateObjectId(category_id)) {
-//       return res.status(400).send({ message: "Invalid category ID." });
-//     }
-
-//     // Validate category
-//     const category = await categoryModel.findById(category_id);
-//     if (!category) {
-//       return res.status(404).send({ message: "Category not found." });
-//     }
-
-//     // Validate and save images
-//     const imageDocs = await Promise.all(
-//       images.map(async (imageUrl: string) => {
-//         if (!isValidImageUrl(imageUrl)) {
-//           throw new Error(`Invalid image URL: ${imageUrl}`);
-//         }
-//         return new ImageModel({ image_url: imageUrl }).save();
-//       })
-//     );
-
-//     // Save product
-//     const newProduct = new productsModel({
-//       name,
-//       description,
-//       price,
-//       category_id,
-//       size,
-//       stock,
-//       images: imageDocs.map((img) => img.image_url),
-//     });
-
-//     const savedProduct = await newProduct.save();
-//     res.status(201).send({ message: "Product created successfully", product: savedProduct });
-//   } catch (err: any) {
-//     console.error("Error creating product:", err.message);
-//     res.status(500).send({ message: "An error occurred while creating the product." });
-//   }
-// });
-
 // Create Category
-
 adminRouter.post("/create-product", async (req: Request, res: Response) => {
   try {
     const { name, description, price, category_id, size, stock, images } = req.body;
@@ -154,6 +96,7 @@ adminRouter.post("/create-product", async (req: Request, res: Response) => {
   }
 });
 
+// Create Category
 
 adminRouter.post("/create-category", async (req: Request, res: Response) => {
   try {

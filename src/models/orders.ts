@@ -3,13 +3,16 @@ import mongoose, { Schema, Document } from "mongoose";
 interface IOrder extends Document {
     order_id: number;
     user_id: mongoose.Schema.Types.ObjectId;
-    products: Array<{ product_id: mongoose.Schema.Types.ObjectId; quantity: number }>;
+    products: Array<{
+        product_id: mongoose.Schema.Types.ObjectId;
+        variant: { size: string; color?: string };
+        quantity: number;
+        price: number;
+    }>;
     total_price: number;
     category_id: mongoose.Schema.Types.ObjectId;
     brand_id: mongoose.Schema.Types.ObjectId;
-    stock: number;
     shipping_address: string;
-    images: string[];
     is_active: boolean;
     order_status: string;
     payment_status: boolean;
@@ -26,15 +29,18 @@ const orderSchema: Schema = new mongoose.Schema(
         products: [
             {
                 product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-                quantity: { type: Number, required: true }
+                variant: {
+                    size: { type: String, required: true },
+                    color: { type: String }
+                },
+                quantity: { type: Number, required: true },
+                price: { type: Number, required: true }
             }
         ],
         total_price: { type: Number, required: true },
         category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
         brand_id: { type: mongoose.Schema.Types.ObjectId, ref: "Brand", required: true },
-        stock: { type: Number, required: true },
         shipping_address: { type: String, required: true },
-        images: { type: [String], default: [] },
         is_active: { type: Boolean, default: true },
         order_status: { type: String, enum: ["Pending", "Shipped", "Delivered", "Cancelled"], default: "Pending" },
         payment_status: { type: Boolean, default: false },
@@ -49,3 +55,4 @@ const orderSchema: Schema = new mongoose.Schema(
 const orderModel = mongoose.model<IOrder>("Order", orderSchema);
 
 export default orderModel;
+
