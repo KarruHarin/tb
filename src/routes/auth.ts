@@ -207,7 +207,8 @@ AuthRouter.post('/login', async (req: Request, res: Response) => {
 
         return res.status(200).send({
             message: 'Login successful',
-            token
+            token,
+            userId:user.id
         });
     } catch (err: any) {
         return res.status(500).send({
