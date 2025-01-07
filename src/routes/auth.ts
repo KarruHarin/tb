@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import userModel from '../models/users';
 import dotenv from 'dotenv';
-
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -215,6 +215,42 @@ AuthRouter.post('/login', async (req: Request, res: Response) => {
             error: err.message
         });
     }
+});
+
+AuthRouter.post("/google", async (req: Request, res: Response) => {
+  try {
+    const { email, full_name } = req.body;
+
+    // Check if user already exists
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(200)
+        .json({ message: "User already exists", user: existingUser });
+    }
+
+    // Generate random password and phone number placeholder for Google users
+    const randomPassword = await bcrypt.hash("password", 10);
+    const tempPhoneNumber = `google_${Date.now()}`;
+
+    // Create new user
+    const newUser = await userModel.create({
+      full_name,
+      email,
+      password: randomPassword, // You might want to hash this
+      phone_number: tempPhoneNumber,
+      is_verified: true,
+      is_deleted: false,
+    });
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: newUser,
+    });
+  } catch (error) {
+    console.error("Error in Google auth:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 export default AuthRouter;

@@ -12,7 +12,7 @@ const password = process.env.mongo_pass;
 async function connectDB() {
   try {
     await mongoose.connect(
-      `mongodb+srv://${user}:${password}@cluster0.g1upd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+      `mongodb+srv://${user}:${password}@thvani-database.xsmwv.mongodb.net/?retryWrites=true&w=majority&appName=Thvani-Database`
     );
     console.log("Mongo DB Connected");
     createAdmin();
