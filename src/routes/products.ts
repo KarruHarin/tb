@@ -19,6 +19,38 @@ productsRouter.get("/products", async (req: Request, res: Response) => {
     }
 });
 
+
+// Get product by productId
+productsRouter.get("/product/:productId", async (req: Request, res: Response) => {
+    const { productId } = req.params;
+    try {
+        // Validate productId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).send({ message: "Invalid Product ID" });
+        }
+
+        // Find product by productId
+        const product = await productsModel
+            .findOne({ _id: new mongoose.Types.ObjectId(productId), is_deleted: false })
+            .populate('category_id')
+            .populate({
+                path: 'images',
+                model: 'Image',
+                select: 'image_url'
+            });
+
+        if (!product) {
+            return res.status(404).send({ message: "Product not found" });
+        }
+
+        res.status(200).send(product);
+    } catch (err: any) {
+        console.error(err.message);
+        res.status(500).send({ message: "An error occurred while retrieving the product" });
+    }
+});
+
+
 // Fetch products with pagination and search functionality
 productsRouter.get('/products/pagination', async (req: Request, res: Response) => {
     try {

@@ -14,9 +14,13 @@ async function connectDB() {
     await mongoose.connect(
       `mongodb+srv://${user}:${password}@thvani-database.xsmwv.mongodb.net/?retryWrites=true&w=majority&appName=Thvani-Database`
     );
+    console.log(`mongodb+srv://${user}:${password}@thvani-database.xsmwv.mongodb.net/?retryWrites=true&w=majority&appName=Thvani-Database`);
+    
     console.log("Mongo DB Connected");
     createAdmin();
   } catch (error) {
+    console.log(`mongodb+srv://${user}:${password}@thvani-database.xsmwv.mongodb.net/?retryWrites=true&w=majority&appName=Thvani-Database`);
+    
     console.log(error);
   }
 }
@@ -29,7 +33,7 @@ const createAdmin = async () => {
       const response = await adminModel.create({
         name: "admin",
         email: "admin@gmail.com",
-        hashed_password: bcrypt.hashSync("admin", 10),
+        hashed_password: bcrypt.hashSync("admin123", 10),
       });
 
       console.log(response);
